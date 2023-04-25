@@ -1,14 +1,37 @@
-name: Lint
-on: [push]
+name: Go Linter
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
-  build:
-    name: Test
+  lint:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v1
-      - uses: borales/actions-yarn@v2.0.0
-        with:
-          cmd: install # will run `yarn install` command
-      - uses: borales/actions-yarn@v2.0.0
-        with:
-          cmd: eslint:github-action
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install Linters
+      run: |
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.41.1
+        go install github.com/client9/misspell/cmd/misspell@v0.3.4
+
+    - name: Lint with golangci-lint
+      run: golangci-lint run ./...
+
+    - name: Lint with misspell
+      run: misspell -locale US -error -source="**/*.{go,md}" --exclude=vendor/**
+
+    - name: Run gofmt
+      run: gofmt -s -l -w $(find . -type f -name '*.go' -not -path "./vendor/*")
+
+    - name: Run goimports
+      run: goimports -w $(find . -type f -name '*.go' -not -path "./vendor/*")
