@@ -1,37 +1,28 @@
-name: Go Linter
-
+name: golangci-lint
 on:
   push:
-    branches: [ main ]
+    tags:
+      - v*
+    branches:
+      - master
+      - main
   pull_request:
-    branches: [ main ]
-
+permissions:
+  contents: read
+  pull-requests: read
 jobs:
-  lint:
+  golangci:
+    name: lint
     runs-on: ubuntu-latest
-
     steps:
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.17
-
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Install Linters
-      run: |
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.41.1
-        go install github.com/client9/misspell/cmd/misspell@v0.3.4
-
-    - name: Lint with golangci-lint
-      run: golangci-lint run ./...
-
-    - name: Lint with misspell
-      run: misspell -locale US -error -source="**/*.{go,md}" --exclude=vendor/**
-
-    - name: Run gofmt
-      run: gofmt -s -l -w $(find . -type f -name '*.go' -not -path "./vendor/*")
-
-    - name: Run goimports
-      run: goimports -w $(find . -type f -name '*.go' -not -path "./vendor/*")
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+      - uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.48
+          skip-cache: true
+          args: --timeout 10m --verbose
